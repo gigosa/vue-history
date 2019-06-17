@@ -19,29 +19,33 @@
     var VueHistory = {
         install: function install(Vue) {
             var timestamp = genTimestamp();
-            Vue.prototype.$appLocation = 1;
-            var ref = window.history;
-            var pushState = ref.pushState;
+            Vue.prototype.$history = {
+                appLocation: 1,
+            };
+            var ref = Vue.prototype;
+            var $history = ref.$history;
+            var ref$1 = window.history;
+            var pushState = ref$1.pushState;
             window.history.pushState = function (state, title, url) {
                 timestamp = genTimestamp();
                 var data = Object.assign({}, { timestamp: timestamp }, state);
                 pastLocations.push({ url: url, state: data });
-                Vue.prototype.$appLocation += 1;
+                $history.appLocation += 1;
                 return pushState.apply(window.history, [data, title, url]);
             };
 
-            var ref$1 = window.history;
-            var replaceState = ref$1.replaceState;
+            var ref$2 = window.history;
+            var replaceState = ref$2.replaceState;
             window.history.replaceState = function (state, title, url) {
                 var data = Object.assign({}, { timestamp: timestamp }, state);
-                pastLocations.splice(Vue.prototype.$appLocation - 1, 1, { url: url, state: data });
+                pastLocations.splice($history.appLocation - 1, 1, { url: url, state: data });
                 return replaceState.apply(window.history, [data, title, url]);
             };
 
             window.addEventListener('popstate', function (e) {
                 var appLocation = pastLocations
                     .findIndex(function (v) { return e.state && (v.state.timestamp === e.state.timestamp); }) + 1;
-                Vue.prototype.$appLocation = appLocation !== 0 ? appLocation : 1;
+                $history.appLocation = appLocation !== 0 ? appLocation : 1;
             });
         },
     };

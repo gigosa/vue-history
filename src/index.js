@@ -14,27 +14,30 @@ const pastLocations = [
 const VueHistory = {
     install(Vue) {
         let timestamp = genTimestamp();
-        Vue.prototype.$appLocation = 1;
+        Vue.prototype.$history = {
+            appLocation: 1,
+        };
+        const { $history } = Vue.prototype;
         const { pushState } = window.history;
         window.history.pushState = (state, title, url) => {
             timestamp = genTimestamp();
             const data = Object.assign({}, { timestamp }, state);
             pastLocations.push({ url, state: data });
-            Vue.prototype.$appLocation += 1;
+            $history.appLocation += 1;
             return pushState.apply(window.history, [data, title, url]);
         };
 
         const { replaceState } = window.history;
         window.history.replaceState = (state, title, url) => {
             const data = Object.assign({}, { timestamp }, state);
-            pastLocations.splice(Vue.prototype.$appLocation - 1, 1, { url, state: data });
+            pastLocations.splice($history.appLocation - 1, 1, { url, state: data });
             return replaceState.apply(window.history, [data, title, url]);
         };
 
         window.addEventListener('popstate', (e) => {
             const appLocation = pastLocations
                 .findIndex(v => e.state && (v.state.timestamp === e.state.timestamp)) + 1;
-            Vue.prototype.$appLocation = appLocation !== 0 ? appLocation : 1;
+            $history.appLocation = appLocation !== 0 ? appLocation : 1;
         });
     },
 };
