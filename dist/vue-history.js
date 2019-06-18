@@ -8,45 +8,50 @@
     return Date.now().toFixed(3);
   }
 
-  var pastLocations = [
-    {
-      url: window.location.pathname,
-      state: {
-        timestamp: genTimestamp(),
-      },
-    } ];
+  var History = function History() {
+    this.timestamp = genTimestamp();
+    this.pastLocations = [
+      {
+        url: window.location.pathname,
+        state: {
+          timestamp: this.timestamp,
+        },
+      } ];
+    this.appLocation = 1;
+    this.init();
+  };
+
+  History.prototype.init = function init () {
+      var this$1 = this;
+
+    var ref = window.history;
+      var pushState = ref.pushState;
+    window.history.pushState = function (state, title, url) {
+      this$1.timestamp = genTimestamp();
+      var data = Object.assign({}, { timestamp: this$1.timestamp }, state);
+      this$1.pastLocations.push({url: url, state: data});
+      this$1.appLocation += 1;
+      return pushState.apply(window.history, [data, title, url]);
+    };
+
+    var ref$1 = window.history;
+      var replaceState = ref$1.replaceState;
+    window.history.replaceState = function (state, title, url) {
+      var data = Object.assign({}, { timestamp: this$1.timestamp }, state);
+      this$1.pastLocations.splice(this$1.appLocation - 1, 1, {url: url, state: data});
+      return replaceState.apply(window.history, [data, title, url]);
+    };
+
+    window.addEventListener('popstate', function (e) {
+      var appLocation = this$1.pastLocations
+        .findIndex(function (v) { return e.state && (v.state.timestamp === e.state.timestamp); }) + 1;
+      this$1.appLocation = appLocation !== 0 ? appLocation : 1;
+    });
+  };
 
   var VueHistory = {
     install: function install(Vue) {
-      var timestamp = genTimestamp();
-      Vue.prototype.$history = {
-        appLocation: 1,
-      };
-      var ref = Vue.prototype;
-      var $history = ref.$history;
-      var ref$1 = window.history;
-      var pushState = ref$1.pushState;
-      window.history.pushState = function (state, title, url) {
-        timestamp = genTimestamp();
-        var data = Object.assign({}, {timestamp: timestamp}, state);
-        pastLocations.push({url: url, state: data});
-        $history.appLocation += 1;
-        return pushState.apply(window.history, [data, title, url]);
-      };
-
-      var ref$2 = window.history;
-      var replaceState = ref$2.replaceState;
-      window.history.replaceState = function (state, title, url) {
-        var data = Object.assign({}, {timestamp: timestamp}, state);
-        pastLocations.splice($history.appLocation - 1, 1, {url: url, state: data});
-        return replaceState.apply(window.history, [data, title, url]);
-      };
-
-      window.addEventListener('popstate', function (e) {
-        var appLocation = pastLocations
-          .findIndex(function (v) { return e.state && (v.state.timestamp === e.state.timestamp); }) + 1;
-        $history.appLocation = appLocation !== 0 ? appLocation : 1;
-      });
+      Vue.prototype.$history = new History();
     },
   };
 
